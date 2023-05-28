@@ -11,8 +11,13 @@ from pydantic import BaseModel
 from src.database.client.observing_directory_client import ObservingDirectoryClient
 from src.database.vector_embedding.chroma_client import ImageChromaClient, PdfChromaClient
 from src.model.embedding_model import EmbeddingModel
+from src.model.llm_model import LlmModel
 from src.observer.directory_observer import DirectoryObserver
+from src.query.query_client import ImageQueryClient, PdfQueryClient, QueryClient
 from typing import Optional, List
+
+# Set your own OpenAI API key.
+os.environ["OPENAI_API_KEY"] = ''
 
 def get_git_root(path):
     git_root = subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=path)
@@ -66,20 +71,20 @@ async def unregister_directory(directory: Directory):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/query_pdfs", response_model=List[Document])
+@app.post("/query_pdfs")
 async def query_pdfs(query: Query):
     try:
-        results = app.state.pdf_chroma_client.similarity_search(query.query)
+        results = app.state.pdf_query_client.query(query.query)
         return results
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/query_images", response_model=List[Document])
+@app.post("/query_images")
 async def query_images(query: Query):
     try:
-        results = app.state.image_chroma_client.similarity_search(query.query)
+        results = app.state.image_query_client.query(query.query)
         return results
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -90,6 +95,7 @@ async def query_images(query: Query):
 @app.on_event("startup")
 async def startup_event():
     app.state.embedding_model = EmbeddingModel()
+    app.state.llm_model = LlmModel()
     app.state.observing_directory_client = ObservingDirectoryClient(db_uri)
     app.state.directory_observer = DirectoryObserver()
     for active_directory in app.state.observing_directory_client.get_all_active():
@@ -97,6 +103,8 @@ async def startup_event():
         app.state.directory_observer.register_path(active_directory.path)
     app.state.image_chroma_client = ImageChromaClient(app.state.embedding_model)
     app.state.pdf_chroma_client = PdfChromaClient(app.state.embedding_model)
+    app.state.image_query_client = ImageQueryClient(app.state.image_chroma_client, app.state.llm_model)
+    app.state.pdf_query_client = PdfQueryClient(app.state.pdf_chroma_client, app.state.llm_model)
 
 @app.on_event("shutdown")
 def shutdown_event():

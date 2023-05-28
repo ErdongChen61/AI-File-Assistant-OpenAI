@@ -57,8 +57,8 @@
             <h2>Search</h2>
             <input id="queryInput" type="text" placeholder="Input your query...">
             <select id="fileType">
-                <option value="pdf">PDF</option>
                 <option value="image">Image</option>
+                <option value="pdf">PDF</option>
             </select>
             <button onClick="queryFiles()">Submit</button>
             <div class="result" id="queryResults">
@@ -103,6 +103,8 @@
         }
 
         async function queryFiles() {
+            const queryResults = document.getElementById('queryResults');
+            queryResults.innerHTML = '';
             const query = document.getElementById('queryInput').value;
             const fileType = document.getElementById('fileType').value;
             const response = await fetch(`/query_${fileType}s`, {
@@ -119,23 +121,19 @@
         function updateQueryResults(results) {
             const queryResults = document.getElementById('queryResults');
             queryResults.innerHTML = '';
-            for (const result of results) {
-                const sourceSpan = document.createElement('span');
-                const keywordSpan = document.createElement('span');
-                sourceSpan.textContent = 'Source: ' + result['metadata']['source'];
-                keywordSpan.textContent = 'Key words: ' + result['page_content'];
-                queryResults.appendChild(sourceSpan);
-                queryResults.appendChild(document.createElement('br'));
 
-                const p = document.createElement('p');
-                queryResults.appendChild(p);
-
-                queryResults.appendChild(keywordSpan);
-                queryResults.appendChild(document.createElement('br'));
-                // Append a horizontal line as separator
-                const hr = document.createElement('hr');
-                queryResults.appendChild(hr);
-            }
+            const sourceSpan = document.createElement('span');
+            const answerSpan = document.createElement('span');
+            sourceSpan.textContent = 'Sources: ' + results['sources'];
+            answerSpan.textContent = 'Answer: ' + results['answer'];
+            queryResults.appendChild(answerSpan);
+            queryResults.appendChild(document.createElement('br'));
+            queryResults.appendChild(sourceSpan);
+            queryResults.appendChild(document.createElement('br'));
+            
+            // Append a horizontal line as separator
+            const hr = document.createElement('hr');
+            queryResults.appendChild(hr);
         }
 
         function updateDirList(dirs) {
