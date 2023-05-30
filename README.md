@@ -8,9 +8,11 @@ As for the costs associated with OpenAI, I conducted a trial run that involved i
 
 ## Examples
 Register/Unregister directories:
+
 ![Register/Unregister](./register_unregister.gif)
 
 Query files:
+
 ![Query](./query.gif)
 
 ## Environment Setup
